@@ -37,8 +37,8 @@ int main(){
     std::cout<<"Servidor escuchando en puerto "<<PORT<<std::endl;
 
     // Aceptar una conexión entrante
-    int addrlen = sizeof(address);
-    int client_fd = accept(server_fd, (sockaddr*)&address, (socklen_t*)&addrlen);
+    socklen_t addrlen = sizeof(address);
+    int client_fd = accept(server_fd, (sockaddr*)&address, &addrlen);
 
     if(client_fd < 0){
         perror("accept");
@@ -47,8 +47,21 @@ int main(){
 
     // Recibir mensaje del cliente
     char buffer[BUFFER_SIZE] = {0};
-    recv(client_fd, buffer, BUFFER_SIZE, 0);
+    ssize_t bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+    
+    if(bytes_received < 0){
+        perror("recv");
+        close(client_fd);
+        close(server_fd);
+        return 1;
+    }
+    buffer[bytes_received] = '\0'; // Asegurar que el buffer esté null-terminated
+
     std::cout<<"Mensaje recibido: "<<buffer<<std::endl;
+
+    //enviamos respuesta al cliente
+    const char* response = "ACK del servidor\n";
+    send(client_fd, response, strlen(response), 0);
 
     // Cerrar los sockets
     close(client_fd);
