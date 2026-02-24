@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17
-SRC = src/main.cpp
+CXXFLAGS = -Wall -Wextra -std=c++17 -Iinclude
+SRC = src/main.cpp src/server.cpp
 OUT = server
 
 all:
