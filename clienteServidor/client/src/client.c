@@ -18,7 +18,7 @@ int main(){
     }
 
     // Configurar la dirección del servidor
-    struct sockaddr_in server_addr;
+    struct sockaddr_in server_addr = {0};
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
 
@@ -35,17 +35,21 @@ int main(){
         return 1;
     }
 
-    const char* message = "Hola desde cliente";
+    // Solicitar al usuario que ingrese un mensaje para enviar al servidor
+    char input[BUFFER_SIZE];
+    printf("Ingresa el mensaje para enviar: \n");
+    fgets(input, BUFFER_SIZE, stdin);
+    input[strcspn(input, "\n")] = '\0'; // Eliminar el salto de línea al final del mensaje
 
     // Enviar mensaje al servidor
-    ssize_t bytes_sent = send(sock, message, strlen(message), 0);
+    ssize_t bytes_sent = send(sock, input, strlen(input), 0);
     if(bytes_sent < 0){
         perror("send");
         close(sock);
         return 1;
     }
 
-    printf("Mensaje enviado: %s\n", message);
+    printf("Mensaje enviado: %s\n", input);
 
     ssize_t bytes_received;
     char buffer[BUFFER_SIZE] = {0};
