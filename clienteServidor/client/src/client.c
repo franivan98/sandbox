@@ -37,10 +37,10 @@ int main(){
 
     // Solicitar al usuario que ingrese un mensaje para enviar al servidor
     char input[BUFFER_SIZE];
-    printf("Ingresa el mensaje para enviar: \n");
-    fgets(input, BUFFER_SIZE, stdin);
-    input[strcspn(input, "\n")] = '\0'; // Eliminar el salto de línea al final del mensaje
-
+    //printf("Ingresa el mensaje para enviar: \n");
+    //fgets(input, BUFFER_SIZE, stdin);
+    //input[strcspn(input, "\n")] = '\0'; // Eliminar el salto de línea al final del mensaje
+    strcpy(input, "Hola desde el cliente");
     // Enviar mensaje al servidor
     ssize_t bytes_sent = send(sock, input, strlen(input), 0);
     if(bytes_sent < 0){

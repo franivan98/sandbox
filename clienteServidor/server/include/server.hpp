@@ -10,6 +10,7 @@ public:
     void start();
 private:
     int port;
+    void handleClient(int client_fd);
 };
 
 #endif // SERVER_HPP
