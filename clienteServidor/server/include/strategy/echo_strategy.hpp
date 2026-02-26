@@ -9,7 +9,7 @@
 */
 class EchoStrategy : public MessageProcessor {
 public:
-    void processMessage(int client_fd, const std::string& message) override;
+    json processMessage(int client_fd, const json& message) override;
 };
 
 #endif

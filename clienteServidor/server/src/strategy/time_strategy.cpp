@@ -8,8 +8,11 @@
  * Implementación del método processMessage de TimeStrategy.
  * Este método obtiene la hora actual del sistema, la convierte a una cadena legible y la envía al cliente.
  */
-void TimeStrategy::processMessage(int client_fd, const std::string& message) {
+json TimeStrategy::processMessage(int client_fd, const json& message) {
     time_t now = time(nullptr);
     std::string timeStr = ctime(&now);
-    send(client_fd, timeStr.c_str(), timeStr.size(), 0);    
+    return {
+        {"status", "success"},
+        {"payload", timeStr}
+    };
 }

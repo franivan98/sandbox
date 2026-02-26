@@ -12,7 +12,7 @@
  */
 class StrategyFactory {
 public:
-    static std::unique_ptr<MessageProcessor> create(const std::string& message);
+    static std::unique_ptr<MessageProcessor> create(const json& message);
 };
 
 #endif

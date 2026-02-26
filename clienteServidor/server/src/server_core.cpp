@@ -134,14 +134,10 @@ void ServerCore::handleClient(int client_fd){
     json response;
     try{
         json request = json::parse(buffer);
-        std::cout << "[SERVER] Recibido JSON: " << request.dump(4) << std::endl;
+        auto processor = StrategyFactory::create(request);
+        response = processor->processMessage(client_fd, request);
 
-        //respuesta dummy
-        response = {
-            {"status", "success"},
-            {"info", "Json Recibido y parseado"}
-        };
-    } catch (const json::parse_error&){
+    } catch (...){
         response = {
             {"status", "error"},
             {"info", "Error al parsear JSON"}
@@ -150,6 +146,11 @@ void ServerCore::handleClient(int client_fd){
 
     std::string resp = response.dump();
     send(client_fd, resp.c_str(), resp.size(), 0);
+    // log para mostrar el mensaje enviado y el cliente que lo recibió
+    std::cout<<"---------------------------------"<< std::endl;
+    std::cout << "[SERVER] mensaje enviado: " << resp << " al cliente " << client_fd << std::endl;
+    std::cout<< "Hilo: " << std::this_thread::get_id() << " procesó la solicitud del cliente " << client_fd << std::endl;
+    std::cout<<"---------------------------------"<< std::endl;
 
 
     //std::thread::id tid = std::this_thread::get_id();

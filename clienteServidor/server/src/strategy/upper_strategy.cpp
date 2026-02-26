@@ -1,14 +1,22 @@
 #include "strategy/upper_strategy.hpp"
-#include <sys/socket.h>
+#include <algorithm>
 
 /**
  * Implementación del método processMessage de UpperStrategy.
  * Este método convierte el mensaje recibido a mayúsculas y lo envía de vuelta al cliente.
  */
-void UpperStrategy::processMessage(int client_fd, const std::string& message) {
-    std::string upperMessage;
-    for(char c : message){
-        upperMessage += std::toupper(c);
+json UpperStrategy::processMessage(int client_fd, const json& request) {
+   if(!request.contains("payload") || !request["payload"].is_string()) {
+        return{
+            {"status", "error"},
+            {"message", "Invalid request: 'payload' field is required and must be a string."}
+        };
     }
-    send(client_fd, upperMessage.c_str(), upperMessage.size(), 0);
+
+    std::string payload = request["payload"];
+    std::transform(payload.begin(), payload.end(), payload.begin(), ::toupper);
+    return {
+        {"status", "success"},
+        {"payload", payload}
+    };
 }
