@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {1..10000}
+for i in {1..1000}
 do
   echo "cliente $i" | ./client &
 done

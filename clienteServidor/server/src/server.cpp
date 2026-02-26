@@ -4,12 +4,13 @@
 #include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <thread>
 
 #define BUFFER_SIZE 1024
 
 // Implementación de la clase Server
-Server::Server(int port) : port(port) {}
+// Constructor para inicializar el servidor con el puerto y el tamaño del pool de hilos
+Server::Server(int port, int poolSize) 
+: port(port), poolSize(poolSize), running(true) {}
 
 // Método para iniciar el servidor
 void Server::start(){
@@ -35,14 +36,20 @@ void Server::start(){
     }
 
     // Escuchar conexiones entrantes
-    if(listen(server_fd, 10) < 0){
+    // El número 128 es el tamaño de la cola de conexiones pendientes
+    if(listen(server_fd, 128) < 0){
         perror("listen");
         close(server_fd);
         return;
     }
-    std::cout << "Servidor multicliente en puerto " << port << std::endl;
+    std::cout << "Servidor con thread pool en puerto " << port << std::endl;
     
-    while(true){
+    // Iniciar los hilos trabajadores
+    for(int i = 0; i < poolSize; i++){
+        workers.emplace_back(&Server::workerLoop, this);
+    }
+    
+    while(running){
         // Aceptar una conexión entrante
         socklen_t addrlen = sizeof(address);
         int client_fd = accept(server_fd, (sockaddr*)&address, &addrlen);
@@ -50,13 +57,36 @@ void Server::start(){
             perror("accept");
             continue;   
         }
-        // Manejar la conexión del cliente en un hilo separado
-        std::thread(&Server::handleClient, this, client_fd).detach();
+        // Agregar el cliente a la cola de clientes pendientes
+        {
+            std::lock_guard<std::mutex> lock(queueMutex);
+            clientQueue.push(client_fd);
+        }
+        // Notificar a los hilos trabajadores que hay un cliente pendiente
+        queueCV.notify_one();
     }
 
     // Cerrar el socket del servidor (aunque en este caso no se llegará aquí)
     close(server_fd);
 
+}
+
+void Server::workerLoop(){
+    while(running){
+        int client_fd;
+        {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            // Esperar hasta que haya un cliente pendiente
+            queueCV.wait(lock, [&]{ return !clientQueue.empty() || !running; });
+            if(!running && clientQueue.empty()){
+                return; // Salir si el servidor se está deteniendo y no hay clientes pendientes
+            }
+            client_fd = clientQueue.front();
+            clientQueue.pop();
+        }
+        // Manejar la conexión del cliente
+        handleClient(client_fd);
+    }
 }
 
 // Método para manejar la conexión de un cliente
@@ -74,8 +104,10 @@ void Server::handleClient(int client_fd){
     }
     std::thread::id tid = std::this_thread::get_id();
     
-    // Enviar respuesta al cliente
-    const char* response = "Mensaje recibido por el servidor";
+    // Enviar respuesta al cliente 
+    const char* response = "Hola desde el servidor con thread pool!";
+    // Imprimir el mensaje recibido y el ID del hilo que lo maneja
+    std::cout << "Hilo " << tid << " recibió: " << buffer << std::endl;
     ssize_t bytes_sent = send(client_fd, response, strlen(response), 0);
     if(bytes_sent < 0){
         perror("send");
