@@ -1,4 +1,7 @@
 #include "server_core.hpp"
+#include "strategy/echo_strategy.hpp"
+#include "strategy/time_strategy.hpp"
+#include "strategy/upper_strategy.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -113,18 +116,29 @@ void ServerCore::handleClient(int client_fd){
         close(client_fd);
         return;   
     }
+
     buffer[bytes_received] = '\0'; // Asegurar que el buffer esté null-terminated
     std::thread::id tid = std::this_thread::get_id();
     std::cout << "Hilo " << tid << " recibió: " << buffer << std::endl;
-    // Enviar respuesta al cliente
-    const char* response = "Hola desde el servidor con thread pool!";
-    ssize_t bytes_sent = send(client_fd, response, strlen(response), 0);
-    if(bytes_sent < 0){
-        perror("send");
-        close(client_fd);
-        return;   
-    }   
-    // Cerrar la conexión con el cliente
-    close(client_fd);
+
+    // Enviar respuesta al cliente con strategy
+    buffer[bytes_received] = '\0';
+    std::string message(buffer);
+    MessageProcessor* processor = nullptr;
+
+    if(message == "TIME"){
+        processor = new TimeStrategy();
+    } else {
+        if(message == "upper"){
+            processor = new UpperStrategy();
+        } else {
+        processor = new EchoStrategy();
+        }
+    }
+
+    processor->processMessage(client_fd, message);
+    shutdown (client_fd, SHUT_RDWR); // Cerrar la conexión para evitar problemas de bloqueo
+    delete processor; // Liberar memoria del procesador
+    close(client_fd); // Cerrar la conexión con el cliente
 }
 
