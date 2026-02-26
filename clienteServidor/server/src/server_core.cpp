@@ -134,6 +134,11 @@ void ServerCore::handleClient(int client_fd){
     std::string message(buffer);
     MessageProcessor* processor = nullptr;
 
+    // Seleccionar la estrategia de procesamiento de mensajes según el contenido del mensaje recibido
+    // Si el mensaje es "TIME", se utiliza TimeStrategy para enviar la hora actual al cliente.
+    // Si el mensaje es "upper", se utiliza UpperStrategy para convertir el mensaje a mayúsculas y enviarlo de vuelta al cliente.
+    // Para cualquier otro mensaje, se utiliza EchoStrategy para devolver el mensaje tal cual al cliente.
+
     if(message == "TIME"){
         processor = new TimeStrategy();
     } else {
