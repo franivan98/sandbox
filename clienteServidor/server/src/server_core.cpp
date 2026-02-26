@@ -1,7 +1,5 @@
 #include "server_core.hpp"
-#include "strategy/echo_strategy.hpp"
-#include "strategy/time_strategy.hpp"
-#include "strategy/upper_strategy.hpp"
+#include "strategy/strategy_factory.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -132,26 +130,12 @@ void ServerCore::handleClient(int client_fd){
     // Enviar respuesta al cliente con strategy
     buffer[bytes_received] = '\0';
     std::string message(buffer);
-    MessageProcessor* processor = nullptr;
-
-    // Seleccionar la estrategia de procesamiento de mensajes según el contenido del mensaje recibido
-    // Si el mensaje es "TIME", se utiliza TimeStrategy para enviar la hora actual al cliente.
-    // Si el mensaje es "upper", se utiliza UpperStrategy para convertir el mensaje a mayúsculas y enviarlo de vuelta al cliente.
-    // Para cualquier otro mensaje, se utiliza EchoStrategy para devolver el mensaje tal cual al cliente.
-
-    if(message == "TIME"){
-        processor = new TimeStrategy();
-    } else {
-        if(message == "upper"){
-            processor = new UpperStrategy();
-        } else {
-        processor = new EchoStrategy();
-        }
-    }
+    
+    // Crear un procesador de mensajes utilizando la fábrica de estrategias
+    auto processor = StrategyFactory::create(message);
 
     processor->processMessage(client_fd, message);
     shutdown (client_fd, SHUT_RDWR); // Cerrar la conexión para evitar problemas de bloqueo
-    delete processor; // Liberar memoria del procesador
     close(client_fd); // Cerrar la conexión con el cliente
 }
 

@@ -7,7 +7,9 @@ SRC = \
 	src/server_core.cpp \
 	src/strategy/echo_strategy.cpp \
 	src/strategy/time_strategy.cpp \
-	src/strategy/upper_strategy.cpp
+	src/strategy/upper_strategy.cpp \
+	src/strategy/strategy_factory.cpp
+
 
 OUT = server
 
