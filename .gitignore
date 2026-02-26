@@ -1,0 +1,73 @@
+# =========================
+# Build / CMake
+# =========================
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake.user
+CMakeConfigureLog.yaml
+
+# Presets locales (si no querés versionarlos)
+CMakeUserPresets.json
+
+# =========================
+# Conan
+# =========================
+conanbuild.sh
+conanrun.sh
+conanbuildenv-*.sh
+conanrunenv-*.sh
+deactivate_conanbuild.sh
+deactivate_conanrun.sh
+conan_toolchain.cmake
+conandeps_legacy.cmake
+pkgRedirects/
+
+# =========================
+# Binaries / Executables
+# =========================
+client/client
+server/server
+client
+server
+
+# =========================
+# Object files
+# =========================
+*.o
+*.o.d
+*.obj
+*.lo
+
+# =========================
+# Libraries
+# =========================
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*~
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log

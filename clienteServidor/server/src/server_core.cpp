@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 #define BUFFER_SIZE 1024
 
 // Constructor para inicializar el servidor con el puerto y el tamaño del pool de hilos
@@ -124,17 +128,41 @@ void ServerCore::handleClient(int client_fd){
     }
 
     buffer[bytes_received] = '\0'; // Asegurar que el buffer esté null-terminated
-    std::thread::id tid = std::this_thread::get_id();
-    std::cout << "Hilo " << tid << " recibió: " << buffer << std::endl;
+    
+    std::cout << "[SERVER] Recibido crudo: " << buffer << std::endl;
+
+    json response;
+    try{
+        json request = json::parse(buffer);
+        std::cout << "[SERVER] Recibido JSON: " << request.dump(4) << std::endl;
+
+        //respuesta dummy
+        response = {
+            {"status", "success"},
+            {"info", "Json Recibido y parseado"}
+        };
+    } catch (const json::parse_error&){
+        response = {
+            {"status", "error"},
+            {"info", "Error al parsear JSON"}
+        };
+    }
+
+    std::string resp = response.dump();
+    send(client_fd, resp.c_str(), resp.size(), 0);
+
+
+    //std::thread::id tid = std::this_thread::get_id();
+    //std::cout << "Hilo " << tid << " recibió: " << buffer << std::endl;
 
     // Enviar respuesta al cliente con strategy
-    buffer[bytes_received] = '\0';
-    std::string message(buffer);
+    //buffer[bytes_received] = '\0';
+    //std::string message(buffer);
     
     // Crear un procesador de mensajes utilizando la fábrica de estrategias
-    auto processor = StrategyFactory::create(message);
+    //auto processor = StrategyFactory::create(message);
 
-    processor->processMessage(client_fd, message);
+    //processor->processMessage(client_fd, message);
     shutdown (client_fd, SHUT_RDWR); // Cerrar la conexión para evitar problemas de bloqueo
     close(client_fd); // Cerrar la conexión con el cliente
 }
