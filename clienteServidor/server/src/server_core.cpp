@@ -31,6 +31,14 @@ void ServerCore::run(){
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
+    // Configurar opciones del socket para reutilizar la dirección y el puerto
+    int opt = 1;
+    if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0){
+        perror("setsockopt");
+        close(server_fd);
+        return;
+    }
+
     // Enlazar el socket a la dirección
     if(bind(server_fd, (sockaddr*)&address, sizeof(address)) < 0){
         perror("bind");
