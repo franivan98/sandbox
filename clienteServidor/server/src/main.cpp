@@ -1,9 +1,9 @@
-#include "server.hpp"
+#include "server_facade.hpp"
 
 #define PORT 8080
 
 int main(){
-    Server server(PORT);
+    ServerFacade server(PORT);
     server.start();
     return 0;
 }

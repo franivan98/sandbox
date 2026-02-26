@@ -1,4 +1,4 @@
-#include "server.hpp"
+#include "server_core.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -7,16 +7,16 @@
 
 #define BUFFER_SIZE 1024
 
-// Implementación de la clase Server
 // Constructor para inicializar el servidor con el puerto y el tamaño del pool de hilos
-Server::Server(int port, int poolSize) 
-: port(port), poolSize(poolSize), running(true) {}
+ServerCore::ServerCore(int port, int poolSize)
+: port(port), poolSize(poolSize), running(false) {}
 
 // Método para iniciar el servidor
-void Server::start(){
+void ServerCore::run(){
+    running = true;
 
     // Crear socket
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_fd < 0){
         perror("socket");
         return;
@@ -42,11 +42,11 @@ void Server::start(){
         close(server_fd);
         return;
     }
-    std::cout << "Servidor con thread pool en puerto " << port << std::endl;
+    std::cout << "Servidor Facade con thread pool en puerto " << port << std::endl;
     
     // Iniciar los hilos trabajadores
     for(int i = 0; i < poolSize; i++){
-        workers.emplace_back(&Server::workerLoop, this);
+        workers.emplace_back(&ServerCore::workerLoop, this);
     }
     
     while(running){
@@ -54,6 +54,9 @@ void Server::start(){
         socklen_t addrlen = sizeof(address);
         int client_fd = accept(server_fd, (sockaddr*)&address, &addrlen);
         if(client_fd < 0){
+            if(!running){
+                break; // Salir si el servidor se está deteniendo
+            }
             perror("accept");
             continue;   
         }
@@ -62,22 +65,32 @@ void Server::start(){
             std::lock_guard<std::mutex> lock(queueMutex);
             clientQueue.push(client_fd);
         }
-        // Notificar a los hilos trabajadores que hay un cliente pendiente
         queueCV.notify_one();
     }
-
-    // Cerrar el socket del servidor (aunque en este caso no se llegará aquí)
-    close(server_fd);
-
 }
 
-void Server::workerLoop(){
+// Método para detener el servidor
+void ServerCore::stop(){
+    // Detener el servidor y cerrar el socket
+    running = false;
+    close(server_fd);
+    // Notificar a los hilos trabajadores para que terminen
+    queueCV.notify_all();
+    // Esperar a que los hilos trabajadores terminen
+    for(auto& worker : workers){
+        if(worker.joinable()){
+            worker.join();
+        }
+    }
+}
+
+// Método para el bucle de los hilos trabajadores
+void ServerCore::workerLoop(){
     while(running){
         int client_fd;
         {
             std::unique_lock<std::mutex> lock(queueMutex);
-            // Esperar hasta que haya un cliente pendiente
-            queueCV.wait(lock, [&]{ return !clientQueue.empty() || !running; });
+            queueCV.wait(lock, [this](){ return !clientQueue.empty() || !running; });
             if(!running && clientQueue.empty()){
                 return; // Salir si el servidor se está deteniendo y no hay clientes pendientes
             }
@@ -90,11 +103,9 @@ void Server::workerLoop(){
 }
 
 // Método para manejar la conexión de un cliente
-void Server::handleClient(int client_fd){
-
-    char buffer[BUFFER_SIZE] = {0};
-    ssize_t bytes_received;
-
+void ServerCore::handleClient(int client_fd){
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_received; 
     // Recibir mensaje del cliente
     bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
     if(bytes_received < 0){
@@ -102,19 +113,18 @@ void Server::handleClient(int client_fd){
         close(client_fd);
         return;   
     }
+    buffer[bytes_received] = '\0'; // Asegurar que el buffer esté null-terminated
     std::thread::id tid = std::this_thread::get_id();
-    
-    // Enviar respuesta al cliente 
-    const char* response = "Hola desde el servidor con thread pool!";
-    // Imprimir el mensaje recibido y el ID del hilo que lo maneja
     std::cout << "Hilo " << tid << " recibió: " << buffer << std::endl;
+    // Enviar respuesta al cliente
+    const char* response = "Hola desde el servidor con thread pool!";
     ssize_t bytes_sent = send(client_fd, response, strlen(response), 0);
     if(bytes_sent < 0){
         perror("send");
         close(client_fd);
         return;   
-    }
-
+    }   
     // Cerrar la conexión con el cliente
     close(client_fd);
 }
+
