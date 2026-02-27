@@ -128,7 +128,7 @@ void ServerCore::handleClient(int client_fd){
     }
 
     buffer[bytes_received] = '\0'; // Asegurar que el buffer esté null-terminated
-    
+    std::cout<<"---------------------------------"<< std::endl;
     std::cout << "[SERVER] Recibido crudo: " << buffer << std::endl;
 
     json response;
@@ -147,7 +147,6 @@ void ServerCore::handleClient(int client_fd){
     std::string resp = response.dump();
     send(client_fd, resp.c_str(), resp.size(), 0);
     // log para mostrar el mensaje enviado y el cliente que lo recibió
-    std::cout<<"---------------------------------"<< std::endl;
     std::cout << "[SERVER] mensaje enviado: " << resp << " al cliente " << client_fd << std::endl;
     std::cout<< "Hilo: " << std::this_thread::get_id() << " procesó la solicitud del cliente " << client_fd << std::endl;
     std::cout<<"---------------------------------"<< std::endl;

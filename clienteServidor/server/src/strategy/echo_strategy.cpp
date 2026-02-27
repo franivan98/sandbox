@@ -15,6 +15,6 @@ json EchoStrategy::processMessage(int client_fd, const json& message) {
     }
     return {
         {"status", "success"},
-        {"payload", message}
+        {"payload", message["payload"]}
     };
 }
